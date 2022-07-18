@@ -70,10 +70,6 @@ func NewMnemonic(entropy []byte) (string, error) {
 	return strings.Join(words, " "), nil
 }
 
-func GenKey() {
-	genKeyByMnemonic("", "0x")
-}
-
 // Appends to data the first (len(data) / 32)bits of the result of sha256(data)
 // Currently only supports data up to 32 bytes
 func addChecksum(data []byte) []byte {
@@ -115,7 +111,7 @@ func validateEntropyBitSize(bitSize int) error {
 	return nil
 }
 
-func genKeyByMnemonic(mnemonic, hrp string) {
+func GenKeyETHByMnemonic(mnemonic string) {
 	if !bip39.IsMnemonicValid(mnemonic) {
 		panic("invalid mnemonic")
 	}
@@ -128,14 +124,29 @@ func genKeyByMnemonic(mnemonic, hrp string) {
 
 	_, pubkeyObject := secp256k1.PrivKeyFromBytes(secp256k1.S256(), privkey)
 	pubkey := pubkeyObject.SerializeCompressed()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Wallet address: ", pubkey)
+}
+
+func GenKeyCosmosByMnemonic(mnemonic, hrp string) {
+	if !bip39.IsMnemonicValid(mnemonic) {
+		panic("invalid mnemonic")
+	}
+	privkey, err := derive(mnemonic, "", constants.DefaultHdPath)
+	if err != nil {
+		panic(err)
+	}
+	privkeyHex := fmt.Sprintf("%x", privkey)
+	fmt.Println("Private key: ", privkeyHex)
+	_, pubkeyObject := secp256k1.PrivKeyFromBytes(secp256k1.S256(), privkey)
+	pubkey := pubkeyObject.SerializeCompressed()
 	bech32Addr, err := bech32Encode(hrp, btcutil.Hash160(pubkey))
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Wallet address: ", fmt.Sprintf("%x", btcutil.Hash160(pubkey)))
 	fmt.Println("Wallet address: ", bech32Addr)
-	fmt.Println("Private key: ", privkeyHex)
-	fmt.Println("Mnemonic key: ", mnemonic)
 }
 
 func derive(mnemonic, bip39Passphrase, hdPath string) ([]byte, error) {
